@@ -738,7 +738,22 @@ class Client(object):
         :rtype: list
         :raises: FBchatException if request failed
         """
+        raw_messages = self.fetchThreadMessagesRaw(thread_id, limit, before)
+        return list(reversed([graphql_to_message(message) for message in raw_messages['message_thread']['messages']['nodes']]))
 
+    def fetchThreadMessagesRaw(self, thread_id=None, limit=20, before=None):
+        """
+        Get the last messages in a thread
+
+        :param thread_id: User/Group ID to get messages from. See :ref:`intro_threads`
+        :param limit: Max. number of messages to retrieve
+        :param before: A timestamp, indicating from which point to retrieve messages
+        :type limit: int
+        :type before: int
+        :return: :class:`models.Message` objects
+        :rtype: list
+        :raises: FBchatException if request failed
+        """
         thread_id, thread_type = self._getThread(thread_id, None)
 
         j = self.graphql_request(GraphQL(doc_id='1386147188135407', params={
@@ -752,8 +767,10 @@ class Client(object):
         if j.get('message_thread') is None:
             raise FBchatException('Could not fetch thread {}: {}'.format(thread_id, j))
 
-        return list(reversed([graphql_to_message(message) for message in j['message_thread']['messages']['nodes']]))
+        return j
 
+        
+        
     def fetchThreadList(self, offset=None, limit=20, thread_location=ThreadLocation.INBOX, before=None):
         """Get thread list of your facebook account
 
